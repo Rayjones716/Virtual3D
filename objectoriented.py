@@ -1,40 +1,44 @@
 #This wil be an object oriented version
 #Of the virtual3d game
 import cv2
-import numpy
+import numpy as np
 
 print ('Starting OO Virtual3D')
 
 
 
 class FaceFinder:
+
 	def __init__(self):
 		print('Face Finder Initialize')
-		faces = self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+		self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
 	def find_face(self,frame):
 		"""Returns face center (x,y), draws rect on frame"""
 
 		#Convert to Greyscale:
-		gray = cv2.cvtColor(frame,cv2.BGR2GRAY)
-		faces = self.face_cascade.detectMultiScale(gray)	
+		gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+		faces = self.face_cascade.detectMultiScale(gray, minNeighbors = 9)	
 
 		#Draw Rectangle
 
-		if faces is none:
-			return none
-		bx=by=bw=bh=0	
+		if faces is None:
+			return None
+		bw=bx=bh=by=0	
 
 		for (x, y, w, h) in faces:
 		    if w > bw:
-		        bx, by, bw, bh = b, w, y, h
-		    cv2.rectangle(img, (x, y), (bx + bw, by + bh), (0, 255, 255), 3)
-		    return (bx+bw/2),(by+bh/2)
+		        bx, by, bw, bh = x, y, w, h
+
+		cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), (0, 255, 255), 3)
+
+		return ((bx + bw//2), by + (bh//2))
 
 #--------------------
 
 class Stage:
-	"""Initalized with display size, draws background grid baesd on position"""
+	"""Initalized with display size, draws background grid based on position"""
+
 	def __init__(self):
 		self.display_h = 0
 		self.display_w = 0
@@ -91,48 +95,43 @@ class Stage:
 		cv2.imshow('Game', img)	
 
 
-	#read the frame
-	ret, frame = cap.read()
-	# if frame is read correctly ret is True
-	if not ret:
-		print("Error reading frame, Exiting...")
-
-	facexy = ff.find_face(frame)
-	frame_small = cv2.resize(frame,(frame.shape[1]//4, frame.shape[0]//4), interpolation = cv2.INTER_LINEAR)
-
-
-
-
-
-
-
+#--------------------
 ff = FaceFinder()
-print('Virtual3D Complete')
+stage = Stage()
+img = np.zeros([1080,1920,3])
+cv2.imshow("Ray's Game", img)
 
-
-ff = FaceFinder()
 cap = cv2.VideoCapture(cv2.CAP_ANY)
 if not cap.isOpened():
 	print('couldnt open cam')
 	exit()
 
-
-
-
+moved = False
+#main processing loop
 while True:
-  retval, frame = cap.read()
-  if retval == False:
-    print('camera error!')
+  ret, frame = cap.read()
+  if not ret:
+  	print('Error Reading Frame. Exiting...')
 
-  ff.find_face(frame)
-  cv2.imshow('q to quit', frame)
+
+  facexy = ff.find_face(frame)
+  frame_small = cv2.resize(frame,(frame.shape[1]//4, frame.shape[0]//4), interpolation = cv2.INTER_LINEAR)
+  #cv2.imshow("Ray's Game", frame)
+
+  cv2.imshow('fac debug', frame_small)
+  if not moved:
+  	cv2.moveWindow("Ray's Game", 1080,0)
+  	moved = True 
+
+  if facexy is not None:
+  	img = stage.update(facexy)	
 
   if cv2.waitKey(30) == ord('q'):
     break
 
 
 
-pause = input('press enter to end')
+#pause = input('press enter to end')
 
 cap.release()
 
